@@ -65,6 +65,102 @@ function createAlternatingCaps(alphabets) {
   return result;
 }
 
+function validateRequest(schema) {
+  return (req, res, next) => {
+    const validatedData = schema.parse(req.body);
+    req.validatedBody = validatedData;
+    next();
+  };
+}
+app.post("/bfhl", validateRequest(DataRequestSchema), (req, res) => {
+  try {
+    const { data } = req.validatedBody;
+
+    const odd_numbers = [];
+    const even_numbers = [];
+    const alphabets = [];
+    const special_characters = [];
+    let sum = 0;
+
+    data.forEach((item) => {
+      const str = String(item).trim();
+
+      if (str === "") return;
+
+      if (isNumber(str)) {
+        const num = parseInt(str);
+        if (num % 2 === 0) {
+          even_numbers.push(str);
+        } else {
+          odd_numbers.push(str);
+        }
+        sum += num;
+      } else if (isAlphabet(str)) {
+        alphabets.push(str.toUpperCase());
+      } else {
+        let hasProcessedAsWhole = false;
+
+        if (str.length === 1 && isSpecialCharacter(str)) {
+          special_characters.push(str);
+          hasProcessedAsWhole = true;
+        }
+
+        if (!hasProcessedAsWhole) {
+          for (let char of str) {
+            if (isNumber(char)) {
+              const num = parseInt(char);
+              if (num % 2 === 0) {
+                even_numbers.push(char);
+              } else {
+                odd_numbers.push(char);
+              }
+              sum += num;
+            } else if (isAlphabet(char)) {
+              alphabets.push(char.toUpperCase());
+            } else if (isSpecialCharacter(char)) {
+              special_characters.push(char);
+            }
+          }
+        }
+      }
+    });
+
+    const concat_string = createAlternatingCaps(alphabets);
+
+    const responseData = {
+      is_success: true,
+      user_id: "ansh_sharma_16072004",
+      email: "ansh.sharma2022a@vitstudent.ac.in",
+      roll_number: "22BCE1338",
+      odd_numbers,
+      even_numbers,
+      alphabets,
+      special_characters,
+      sum: sum.toString(),
+      concat_string,
+    };
+
+    const validatedResponse = DataResponseSchema.parse(responseData);
+
+    res.status(200).json(validatedResponse);
+  } catch (error) {
+    console.error("Error processing request:", error);
+
+    if (error instanceof z.ZodError) {
+      return res.status(500).json({
+        is_success: false,
+        message: "Response validation error",
+        errors: error.errors,
+      });
+    }
+
+    res.status(500).json({
+      is_success: false,
+      message: "Internal server error",
+    });
+  }
+});
+
 app.get("/bfhl", (req, res) => {
   try {
     const response = {
