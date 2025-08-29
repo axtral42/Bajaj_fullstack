@@ -7,6 +7,21 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
+app.get("/bfhl", (req, res) => {
+  try {
+    const response = {
+      NOTE: "Kindly send data through POST",
+    };
+    res.status(200).json(response);
+  } catch (error) {
+    console.error("Error in GET /bfhl:", error);
+    res.status(500).json({
+      is_success: false,
+      message: "Internal server error",
+    });
+  }
+});
+
 app.get("/", (req, res) => {
   try {
     const rootResponse = {
@@ -24,6 +39,31 @@ app.get("/", (req, res) => {
       message: "Internal server error",
     });
   }
+});
+
+app.use((error, req, res, next) => {
+  console.error("Global error handler:", error);
+
+  if (error instanceof SyntaxError && error.status === 400 && "body" in error) {
+    return res.status(400).json({
+      is_success: false,
+      message: "Invalid JSON format",
+    });
+  }
+
+  res.status(500).json({
+    is_success: false,
+    message: "Internal server error",
+  });
+});
+
+app.use((req, res) => {
+  res.status(404).json({
+    is_success: false,
+    message: "Route not found",
+    requested_path: req.path,
+    method: req.method,
+  });
 });
 
 app.listen(PORT);
